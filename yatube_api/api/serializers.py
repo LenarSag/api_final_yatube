@@ -8,6 +8,13 @@ from posts.models import Post, Group, Comment, Follow
 
 User = get_user_model()
 
+# class DifferentUserFollowingValidator:
+#     def __call__(self, attrs):
+#         user = attrs['user']
+#         following = attrs['following']
+#         if user == following:
+#             raise ValidationError("User and following cannot be the same.")
+
 
 class FollowSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(

@@ -2,7 +2,9 @@
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 
@@ -21,6 +23,7 @@ User = get_user_model()
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+    pagination_class = LimitOffsetPagination
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -76,10 +79,13 @@ class CommentViewSet(viewsets.ModelViewSet):
 class FollowViewSet(viewsets.ModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
+    permission_classes = (IsAuthenticated,)
+    search_fields = "user__username"
 
     def perform_create(self, serializer):
-        # following_username = self.request.data.get("following")
-        # following_user = get_object_or_404(User, username=following_username)
-        # following_user = User.objects.filter(username=following_username).first()
+        following_username = self.request.data.get("following")
+        following_user = User.objects.filter(username=following_username).first()
+        if self.request.user == following_user:
+            raise ValidationError("Нельзя подписаться на самого себя!")
         serializer.validated_data["user"] = self.request.user
-        serializer.save()  # following=following_user)
+        serializer.save()
