@@ -89,6 +89,7 @@ POST .../api/v1/posts/14/comments/
 GET .../api/v1/groups/2/
 
 Пример ответа:
+
 {
     "id": 2,
     "title": "Математика",
@@ -100,6 +101,7 @@ GET .../api/v1/groups/2/
 GET .../api/v1/follow/
 
 Пример ответа:
+
 [
     {
         "user": "Сергей Пушкин",
@@ -112,12 +114,15 @@ GET .../api/v1/follow/
 ]
 
 Пример POST-запроса с токеном Сергея Пушкина: подписываемся на другого пользователя.
+
 POST .../api/v1/follow/
+
 {
 "following": "Joe Biden"
 }
 
 Пример ответа:
+
 [
     {
         "user": "Сергей Пушкин",
@@ -149,6 +154,7 @@ POST .../api/v1/jwt/create
 }
 
 Пример ответа:
+
 {
 "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzE0MjE3NjMzLCJqdGkiOiJmZTY1Y2FiMWUxM2I0OGI1YjE1NDZmN2Y3YmI3ZmIwZCIsInVzZXJfaWQiOjF9.AEkk4YZKOX4147Pf7Qy5o-KIRctM_Be7FbGtRXfMnSo"
 }
@@ -161,4 +167,5 @@ POST .../api/v1/jwt/verify
 }
 
 Пример ответа:
+
 {}
