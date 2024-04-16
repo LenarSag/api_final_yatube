@@ -8,17 +8,12 @@ from posts.models import Post, Group, Comment, Follow
 
 User = get_user_model()
 
-# class DifferentUserFollowingValidator:
-#     def __call__(self, attrs):
-#         user = attrs['user']
-#         following = attrs['following']
-#         if user == following:
-#             raise ValidationError("User and following cannot be the same.")
-
 
 class FollowSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
-        slug_field="username", read_only=True, default=serializers.CurrentUserDefault()
+        slug_field="username",
+        read_only=True,
+        default=serializers.CurrentUserDefault()
     )
     following = serializers.SlugRelatedField(
         slug_field="username", queryset=User.objects.all()
@@ -58,3 +53,10 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = "__all__"
+
+# class DifferentUserFollowingValidator:
+#     def __call__(self, attrs):
+#         user = attrs['user']
+#         following = attrs['following']
+#         if user == following:
+#             raise ValidationError("Нельзя подписаться на самого себя!")

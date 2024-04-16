@@ -1,6 +1,4 @@
-# TODO:  Напишите свой вариант
-
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import LimitOffsetPagination
@@ -80,12 +78,18 @@ class FollowViewSet(viewsets.ModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
     permission_classes = (IsAuthenticated,)
-    search_fields = "user__username"
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ("following__username",)
 
     def perform_create(self, serializer):
         following_username = self.request.data.get("following")
-        following_user = User.objects.filter(username=following_username).first()
+        following_user = User.objects.filter(
+            username=following_username
+        ).first()
         if self.request.user == following_user:
             raise ValidationError("Нельзя подписаться на самого себя!")
         serializer.validated_data["user"] = self.request.user
         serializer.save()
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
