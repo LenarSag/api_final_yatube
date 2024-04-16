@@ -1,12 +1,13 @@
-from rest_framework import viewsets, status, filters
-from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework import viewsets, filters, mixins
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 
 from posts.models import Post, Group, Comment, Follow
+from api.permissions import (
+    AuthorOrReadOnly, PostExistsAndAuthorOrReadOnly, ReadOnly
+)
 from api.serializers import (
     PostSerializer,
     GroupSerializer,
@@ -22,21 +23,15 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     pagination_class = LimitOffsetPagination
+    permission_classes = (AuthorOrReadOnly,)
+
+    def get_permissions(self):
+        if self.action == "retrieve":
+            return (ReadOnly(),)
+        return super().get_permissions()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            raise PermissionDenied("Изменение чужого контента запрещено!")
-        return super().update(request, *args, **kwargs)
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            raise PermissionDenied("Удаление чужого контента запрещено!")
-        return super().destroy(request, *args, **kwargs)
 
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
@@ -47,34 +42,28 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = (PostExistsAndAuthorOrReadOnly,)
 
-    def get_post_or_404(self):
-        post_id = self.kwargs.get("post_id")
-        return get_object_or_404(Post, pk=post_id)
+    def get_permissions(self):
+        if self.action == "retrieve":
+            return (ReadOnly(),)
+        return super().get_permissions()
 
     def get_queryset(self):
-        post = self.get_post_or_404()
-        return self.queryset.filter(post=post.id)
+        return self.queryset.filter(post=self.kwargs.get("post_id"))
 
     def perform_create(self, serializer):
-        post = self.get_post_or_404()
+        post_id = self.kwargs.get("post_id")
+        post = Post.objects.get(pk=post_id)
         serializer.save(post=post, author=self.request.user)
 
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            raise PermissionDenied("Изменение чужого контента запрещено!")
-        return super().update(request, *args, **kwargs)
 
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            raise PermissionDenied("Удаление чужого контента запрещено!")
-        instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class FollowViewSet(viewsets.ModelViewSet):
+class FollowViewSet(
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet
+):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
     permission_classes = (IsAuthenticated,)
@@ -82,12 +71,6 @@ class FollowViewSet(viewsets.ModelViewSet):
     search_fields = ("following__username",)
 
     def perform_create(self, serializer):
-        following_username = self.request.data.get("following")
-        following_user = User.objects.filter(
-            username=following_username
-        ).first()
-        if self.request.user == following_user:
-            raise ValidationError("Нельзя подписаться на самого себя!")
         serializer.validated_data["user"] = self.request.user
         serializer.save()
 

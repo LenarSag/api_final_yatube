@@ -19,6 +19,15 @@ class FollowSerializer(serializers.ModelSerializer):
         slug_field="username", queryset=User.objects.all()
     )
 
+    def validate(self, attrs):
+        following_username = attrs.get("following").username
+        user_username = self.context["request"].user.username
+        if following_username == user_username:
+            raise serializers.ValidationError(
+                "Нельзя подписаться на самого себя!"
+            )
+        return attrs
+
     class Meta:
         model = Follow
         exclude = ("id",)
@@ -37,26 +46,16 @@ class GroupSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField()
-    group = serializers.PrimaryKeyRelatedField(
-        queryset=Group.objects.all(), required=False
-    )
 
     class Meta:
-        fields = "__all__"
         model = Post
+        fields = "__all__"
 
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField()
-    post = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Comment
         fields = "__all__"
-
-# class DifferentUserFollowingValidator:
-#     def __call__(self, attrs):
-#         user = attrs['user']
-#         following = attrs['following']
-#         if user == following:
-#             raise ValidationError("Нельзя подписаться на самого себя!")
+        read_only_fields = ("post",)
