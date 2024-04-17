@@ -10,22 +10,20 @@ class ReadOnly(permissions.BasePermission):
         )
 
 
-class BasePermissionWithSafeMethods(permissions.BasePermission):
+class AuthorOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         return (
             request.method in permissions.SAFE_METHODS
             or request.user.is_authenticated
         )
 
-
-class AuthorOrReadOnly(BasePermissionWithSafeMethods):
     def has_object_permission(self, request, view, obj):
         return obj.author == request.user
 
 
-class PostExistsAndAuthorOrReadOnly(BasePermissionWithSafeMethods):
+class PostExistsAndAuthorOrReadOnly(AuthorOrReadOnly):
     def has_object_permission(self, request, view, obj):
         post = Post.objects.filter(pk=view.kwargs.get("post_id")).first()
         if post is None:
             return False
-        return obj.author == request.user
+        return super().has_object_permission(request, view, obj)
