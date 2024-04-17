@@ -1,30 +1,29 @@
 from rest_framework import permissions
-from rest_framework.exceptions import NotFound
-
-from posts.models import Post
 
 
-class ReadOnly(permissions.BasePermission):
+class CustomObjectPermissions(permissions.BasePermission):
+    """
+    Пользовательские разрешения на уровне объекта для представлений.
+    Этот класс разрешений предоставляет настраиваемые разрешения
+    на основе типа запроса и автора объекта.
+    """
+
     def has_permission(self, request, view):
-        return (
-            request.method in permissions.SAFE_METHODS
-        )
-
-
-class AuthorOrReadOnly(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.method in permissions.SAFE_METHODS
-            or request.user.is_authenticated
-        )
+        """
+        Проверка на то, что запрос GET, иначе проверка на аутентификацию.
+        """
+        if view.action in ["retrieve", "list"]:
+            return True
+        return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        return obj.author == request.user
+        """
+        При запросе конкретного обьекта, если запрос на изменение/удаление,
+        то проверяем, что автор запроса == автор обьекта. В отсальных случаях
+        возвращаем True.
+        """
+        if view.action in ["update", "partial_update", "destroy"]:
+            return obj.author == request.user
+        return True
 
-
-class PostExistsAndAuthorOrReadOnly(AuthorOrReadOnly):
-    def has_object_permission(self, request, view, obj):
-        post = Post.objects.filter(pk=view.kwargs.get("post_id")).first()
-        if post is None:
-            raise NotFound
-        return super().has_object_permission(request, view, obj)
+    # проверить сейв методы head, options
