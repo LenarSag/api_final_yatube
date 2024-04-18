@@ -6,7 +6,6 @@ from django.shortcuts import get_object_or_404
 
 from posts.models import Post, Group, Comment, Follow
 from api.permissions import CustomObjectPermissions
-
 from api.serializers import (
     PostSerializer,
     GroupSerializer,
