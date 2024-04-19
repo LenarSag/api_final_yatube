@@ -9,9 +9,10 @@ class CustomObjectPermissions(permissions.BasePermission):
 
     def has_permission(self, request, view):
         """
-        Проверка на то, что запрос GET, иначе проверка на аутентификацию.
+        Проверка на то, что запрос GET, HEAD или OPTIONS,
+        иначе проверка на аутентификацию.
         """
-        if view.action in ("retrieve", "list"):
+        if request.method in permissions.SAFE_METHODS:
             return True
         return request.user.is_authenticated
 
@@ -21,6 +22,6 @@ class CustomObjectPermissions(permissions.BasePermission):
         то проверяем, что автор запроса == автор обьекта. В остальных случаях
         возвращаем True.
         """
-        if view.action in ("update", "partial_update", "destroy"):
+        if request.method not in permissions.SAFE_METHODS:
             return obj.author == request.user
         return True
